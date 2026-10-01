@@ -1,0 +1,131 @@
+<div class="page-shell">
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Nest home">
+      <span class="brand-mark" aria-hidden="true">N</span>
+      <span>NEST<span class="brand-light">FINDER</span></span>
+    </a>
+    <span class="topbar-note">Northern Virginia homes</span>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="page-title">
+      <p class="eyebrow">A better way to find home</p>
+      <h1 id="page-title">Find a place<br /><span>that feels like yours.</span></h1>
+      <p class="hero-copy">Search homes from local listing feeds. Set your budget and let relevance help you find the right fit.</p>
+    </section>
+
+    <section class="search-panel" aria-labelledby="search-title">
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow">Your search</p>
+          <h2 id="search-title">What are you looking for?</h2>
+        </div>
+        <span class="panel-icon" aria-hidden="true">⌕</span>
+      </div>
+
+      <form (ngSubmit)="submitSearch()" novalidate>
+        <div class="filter-grid">
+          <label class="filter-field city-field">
+            <span>City</span>
+            <input name="city" type="text" placeholder="e.g. Springfield" autocomplete="address-level2" [(ngModel)]="filters.city" />
+          </label>
+          <label class="filter-field">
+            <span>Min. price</span>
+            <div class="input-with-prefix"><span>$</span><input name="minPrice" type="number" min="0" step="1000" placeholder="No minimum" [(ngModel)]="filters.minPrice" /></div>
+          </label>
+          <label class="filter-field">
+            <span>Max. price</span>
+            <div class="input-with-prefix"><span>$</span><input name="maxPrice" type="number" min="0" step="1000" placeholder="No maximum" [(ngModel)]="filters.maxPrice" /></div>
+          </label>
+          <label class="filter-field">
+            <span>Bedrooms</span>
+            <input name="minBedrooms" type="number" min="0" step="1" placeholder="Any" [(ngModel)]="filters.minBedrooms" />
+          </label>
+          <label class="filter-field">
+            <span>Target budget</span>
+            <div class="input-with-prefix"><span>$</span><input name="targetBudget" type="number" min="1" step="1000" placeholder="Optional" [(ngModel)]="filters.targetBudget" /></div>
+          </label>
+          <label class="filter-field keyword-field">
+            <span>Keywords in description</span>
+            <input name="keyword" type="search" placeholder="Try “fenced yard” or “Metro”" [(ngModel)]="filters.keyword" />
+          </label>
+          <label class="filter-field page-size-field">
+            <span>Results per page</span>
+            <input name="pageSize" type="number" min="1" max="100" step="1" [(ngModel)]="filters.pageSize" />
+          </label>
+        </div>
+
+        <p *ngIf="validationMessage" class="message validation-message" role="alert">{{ validationMessage }}</p>
+
+        <div class="form-actions">
+          <p class="score-note">Relevance balances budget fit (60%) with listing recency (40%). Leave budget blank to rank by recency.</p>
+          <div class="action-buttons">
+            <button type="button" class="button button-quiet" (click)="resetSearch()">Reset</button>
+            <button type="submit" class="button button-primary" [disabled]="isLoading">
+              <span>{{ isLoading ? 'Searching…' : 'Search homes' }}</span>
+              <span aria-hidden="true">↗</span>
+            </button>
+          </div>
+        </div>
+      </form>
+    </section>
+
+    <section class="results-section" aria-labelledby="results-title" aria-live="polite">
+      <div class="results-heading">
+        <div>
+          <p class="eyebrow">Curated for you</p>
+          <h2 id="results-title">{{ results ? results.totalCount : 'Home' }} {{ results?.totalCount === 1 ? 'home' : 'homes' }}<span *ngIf="results"> found</span></h2>
+        </div>
+        <span *ngIf="results?.totalCount" class="sort-label">Sorted by relevance <span aria-hidden="true">↓</span></span>
+      </div>
+
+      <div *ngIf="isLoading" class="state-card" role="status">
+        <span class="spinner" aria-hidden="true"></span>
+        <span>Finding homes that fit your search…</span>
+      </div>
+
+      <div *ngIf="errorMessage && !isLoading" class="state-card error-state" role="alert">
+        <span class="state-symbol" aria-hidden="true">!</span>
+        <div><strong>We couldn't load listings.</strong><p>{{ errorMessage }}</p><button type="button" class="text-button" (click)="submitSearch()">Try again</button></div>
+      </div>
+
+      <div *ngIf="results && results.totalCount === 0 && !isLoading" class="state-card empty-state">
+        <span class="state-symbol" aria-hidden="true">⌕</span>
+        <div><strong>No homes match those filters.</strong><p>Try a different city or widen your price range.</p></div>
+      </div>
+
+      <div *ngIf="results && results.totalCount > 0 && !isLoading" class="listing-grid">
+        <article class="listing-card" *ngFor="let item of results.items; trackBy: trackBySourceAndId">
+          <div class="listing-art" aria-hidden="true">
+            <div class="art-sun"></div><div class="art-hill hill-back"></div><div class="art-hill hill-front"></div>
+            <span class="art-tag">{{ item.listing.city }}</span>
+            <span class="status-badge" [class.status-pending]="item.listing.status !== 'active'">{{ item.listing.status }}</span>
+          </div>
+          <div class="listing-content">
+            <div class="listing-price-row">
+              <p class="listing-price">{{ item.listing.price | currency:'USD':'symbol':'1.0-0' }}</p>
+              <span class="relevance-score" [attr.aria-label]="'Relevance score ' + item.relevanceScore + ' out of 100'">{{ item.relevanceScore }}<small> relevance</small></span>
+            </div>
+            <h3>{{ item.listing.address }}</h3>
+            <p class="listing-location">{{ item.listing.city }}, {{ item.listing.state }} {{ item.listing.zip }}</p>
+            <div class="listing-facts">
+              <span><strong>{{ item.listing.bedrooms }}</strong> beds</span>
+              <span><strong>{{ item.listing.bathrooms }}</strong> baths</span>
+              <span><strong>{{ item.listing.sqft | number }}</strong> sqft</span>
+            </div>
+            <p class="listing-description">{{ item.listing.description }}</p>
+            <div class="listing-footer"><span>{{ item.listing.source }} · Listed {{ item.listing.listedDate | date:'MMM d, y' }}</span><span class="footer-arrow" aria-hidden="true">↗</span></div>
+          </div>
+        </article>
+      </div>
+
+      <nav *ngIf="results && results.totalPages > 1 && !isLoading" class="pagination" aria-label="Listing pages">
+        <button type="button" class="page-button" [disabled]="results.page <= 1" (click)="changePage(results.page - 1)" aria-label="Previous page">←</button>
+        <span>Page <strong>{{ results.page }}</strong> of <strong>{{ results.totalPages }}</strong></span>
+        <button type="button" class="page-button" [disabled]="results.page >= results.totalPages" (click)="changePage(results.page + 1)" aria-label="Next page">→</button>
+      </nav>
+    </section>
+  </main>
+
+  <footer class="site-footer"><span>© 2026 NestFinder</span><span>Homes from multiple local listing feeds</span></footer>
+</div>
